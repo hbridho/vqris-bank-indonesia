@@ -3,6 +3,7 @@ __pycache__
 *.pyo
 *.pyd
 venv
+vqris
 .env
 .git
 .gitignore
