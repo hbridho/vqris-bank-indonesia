@@ -24,36 +24,29 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             padding: 20px;
             width: 90%;
-            max-width: 400px;
+            max-width: 100px;
             text-align: center;
         }
-        button {
-            padding: 12px 24px;
-            font-size: 18px;
-            cursor: pointer;
-            margin-top: 20px;
-            background-color: #007BFF;
-            color: #fff;
+        .button {
+            display: inline-block;
+            width: 100px;
+            height: 100px;
+            background-color: transparent;
+            background-size: cover;
             border: none;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #0056b3;
+            cursor: pointer;
+            margin-top: 0px;
         }
         #generated-img {
             display: none;
             width: auto;
-            height: 150px;
+            height: 200px;
             margin-bottom: 20px;
         }
         #text {
             margin-top: 20px;
             font-size: 24px;
             font-weight: bold;
-        }
-        audio, img {
-            margin-top: 20px;
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
@@ -63,71 +56,97 @@
     <div id="content">
         <img id="generated-img" src="{{ url_for('static', filename='images/a.png') }}" alt="QR Code">
         <p id="text"></p>
-        <button id="start-btn">Aktifkan V-QRIS</button>
-        <audio id="audio" controls></audio>
+        <button id="start-btn" class="button" style="background-image: url('{{ url_for('static', filename='images/mic.png') }}');"></button>
+        <button id="back-btn" class="button" style="display: none; background-image: url('{{ url_for('static', filename='images/back.png') }}');"></button>
     </div>
     <script>
         var recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = 'id-ID';
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
-    
-        document.getElementById('start-btn').addEventListener('click', () => {
+
+        var currentStep = 0;
+        var paymentAmount = '';
+
+        function playAudio(url, callback) {
+            var audio = new Audio(url);
+            audio.play();
+            audio.onended = function() {
+                callback();
+            };
+        }
+
+        function startRecognition() {
             recognition.start();
+        }
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            playAudio('/tts_suggest', startRecognition);
         });
-    
+
+        document.getElementById('back-btn').addEventListener('click', () => {
+            location.reload();
+        });
+
         recognition.onresult = function(event) {
             var last = event.results.length - 1;
-            var text = event.results[last][0].transcript;
-    
+            var text = event.results[last][0].transcript.toLowerCase();
+
             var button = document.getElementById('start-btn');
             button.disabled = true;
-            button.textContent = 'Sedang memproses...';
-    
-            $.ajax({
-                url: '/speech_to_text',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ 'text': text }),
-                success: function(response) {
-                    var audio = document.getElementById('audio');
-                    var url = '/audio/' + response.audio;
-                    audio.src = url;
-                    audio.play();
-    
-                    var img = document.getElementById('generated-img');
-                    img.src = '/static/images/a.png';
-                    img.style.display = 'block';
-    
-                    document.getElementById('text').textContent = "Rp. " + response.shown_number;
 
-                    audio.onplay = function() {
-                        button.textContent = 'Tunggu hingga audio selesai diputar';
-                    };
-
-                    audio.onended = function() {
-                        button.disabled = false;
-                        button.textContent = 'Aktifkan V-QRIS';
-                    };
-                },
-                error: function(error) {
-                    console.log(error);
-                    button.disabled = false;
-                    button.textContent = 'Aktifkan V-QRIS';
+            if (currentStep === 0) {
+                if (text.includes("iya") || text.includes("yes")) {
+                    currentStep++;
+                    playAudio('/tts_asking', startRecognition);
+                } else {
+                    location.reload();
                 }
-            });
+            } else if (currentStep === 1) {
+                paymentAmount = text;
+                $.ajax({
+                    url: '/speech_to_text',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ 'text': text }),
+                    success: function(response) {
+                        if (response.shown_number) {
+                            currentStep++;
+                            playAudio('/audio/' + response.audio, startRecognition);
+                            document.getElementById('text').textContent = "Rp. " + response.shown_number;
+                        } else {
+                            playAudio('/tts_asking', startRecognition);
+                        }
+                    },
+                    error: function(error) {
+                        playAudio('/tts_asking', startRecognition);
+                    }
+                });
+            } else if (currentStep === 2) {
+                if (text.includes("iya") || text.includes("yes")) {
+                    playAudio('/tts_confirmation', function() {
+                        document.getElementById('generated-img').style.display = 'block';
+                        document.getElementById('text').style.display = 'none';
+                        button.style.display = 'none';
+                        document.getElementById('back-btn').style.display = 'block';
+                        currentStep = 0;  // Reset for next interaction
+                    });
+                } else {
+                    currentStep = 1;  // Go back to asking amount
+                    playAudio('/tts_asking', startRecognition);
+                }
+            }
         };
-    
+
         recognition.onspeechend = function() {
             recognition.stop();
         };
-    
+
         recognition.onerror = function(event) {
-            document.getElementById('text').textContent = 'Terjadi kesalahan: ' + event.error;
             var button = document.getElementById('start-btn');
             button.disabled = false;
-            button.textContent = 'Aktifkan V-QRIS';
+            playAudio('/tts_asking', startRecognition);
         };
-    </script>    
+    </script>
 </body>
 </html>
