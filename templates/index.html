@@ -92,11 +92,25 @@
         }
 
         function startRecognitionWithCue() {
-            playAudio('/static/voice/start_rec.wav', startRecognition);
+            playAudio('/static/voice/start_rec.wav', function() {
+                startRecognition();
+                toggleButtonState(true);
+            });
         }
 
         function startRecognition() {
             recognition.start();
+        }
+
+        function toggleButtonState(isRecognizing) {
+            var button = document.getElementById('start-btn');
+            if (isRecognizing) {
+                button.disabled = true;
+                button.style.backgroundImage = "url('{{ url_for('static', filename='images/sound_wave.gif') }}')";
+            } else {
+                button.disabled = false;
+                button.style.backgroundImage = "url('{{ url_for('static', filename='images/mic.png') }}')";
+            }
         }
 
         document.getElementById('start-btn').addEventListener('click', () => {
@@ -159,6 +173,7 @@
 
         recognition.onspeechend = function() {
             recognition.stop();
+            toggleButtonState(false);
         };
 
         recognition.onerror = function(event) {
