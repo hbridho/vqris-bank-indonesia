@@ -5,7 +5,7 @@ import scipy.io.wavfile
 import os
 import re
 
-app = Flask(__name__, template_folder="templates")
+app = Flask(__name__, template_folder="templates", static_folder="static")
 
 model_path = "model/mms-tts-ind"
 model = VitsModel.from_pretrained(model_path)
@@ -146,6 +146,10 @@ def get_tts_confirmation():
 @app.route('/audio/<filename>')
 def get_audio(filename):
     return send_from_directory('output', filename)
+
+@app.route('/static/voice/start_rec.wav')
+def get_cue_sound():
+    return send_from_directory('static/voice', 'start_rec.wav')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

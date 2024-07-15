@@ -23,19 +23,32 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             padding: 20px;
+            height: 90%;
             width: 90%;
-            max-width: 100px;
+            max-height: 600px;
+            max-width: 400px;
             text-align: center;
+            justify-content: space-between;
+            position: relative;
+        }
+        .button-container {
+            position: absolute;
+            top: 50%; /* Center vertically */
+            left: 50%;
+            transform: translate(-50%, -50%); /* Center horizontally and vertically */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .button {
             display: inline-block;
-            width: 100px;
-            height: 100px;
+            width: 300px; /* Increase width */
+            height: 300px; /* Increase height */
             background-color: transparent;
             background-size: cover;
             border: none;
             cursor: pointer;
-            margin-top: 0px;
+            margin-top: 10px; /* Adjust margin to control spacing between buttons */
         }
         #generated-img {
             display: none;
@@ -56,8 +69,10 @@
     <div id="content">
         <img id="generated-img" src="{{ url_for('static', filename='images/a.png') }}" alt="QR Code">
         <p id="text"></p>
-        <button id="start-btn" class="button" style="background-image: url('{{ url_for('static', filename='images/mic.png') }}');"></button>
-        <button id="back-btn" class="button" style="display: none; background-image: url('{{ url_for('static', filename='images/back.png') }}');"></button>
+        <div class="button-container">
+            <button id="start-btn" class="button" style="background-image: url('{{ url_for('static', filename='images/mic.png') }}');"></button>
+            <button id="back-btn" class="button" style="display: none; background-image: url('{{ url_for('static', filename='images/back.png') }}');"></button>
+        </div>
     </div>
     <script>
         var recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -76,12 +91,16 @@
             };
         }
 
+        function startRecognitionWithCue() {
+            playAudio('/static/voice/start_rec.wav', startRecognition);
+        }
+
         function startRecognition() {
             recognition.start();
         }
 
         document.getElementById('start-btn').addEventListener('click', () => {
-            playAudio('/tts_suggest', startRecognition);
+            playAudio('/tts_suggest', startRecognitionWithCue);
         });
 
         document.getElementById('back-btn').addEventListener('click', () => {
@@ -98,7 +117,7 @@
             if (currentStep === 0) {
                 if (text.includes("iya") || text.includes("yes")) {
                     currentStep++;
-                    playAudio('/tts_asking', startRecognition);
+                    playAudio('/tts_asking', startRecognitionWithCue);
                 } else {
                     location.reload();
                 }
@@ -112,14 +131,14 @@
                     success: function(response) {
                         if (response.shown_number) {
                             currentStep++;
-                            playAudio('/audio/' + response.audio, startRecognition);
+                            playAudio('/audio/' + response.audio, startRecognitionWithCue);
                             document.getElementById('text').textContent = "Rp. " + response.shown_number;
                         } else {
-                            playAudio('/tts_asking', startRecognition);
+                            playAudio('/tts_asking', startRecognitionWithCue);
                         }
                     },
                     error: function(error) {
-                        playAudio('/tts_asking', startRecognition);
+                        playAudio('/tts_asking', startRecognitionWithCue);
                     }
                 });
             } else if (currentStep === 2) {
@@ -133,7 +152,7 @@
                     });
                 } else {
                     currentStep = 1;  // Go back to asking amount
-                    playAudio('/tts_asking', startRecognition);
+                    playAudio('/tts_asking', startRecognitionWithCue);
                 }
             }
         };
@@ -145,7 +164,7 @@
         recognition.onerror = function(event) {
             var button = document.getElementById('start-btn');
             button.disabled = false;
-            playAudio('/tts_asking', startRecognition);
+            playAudio('/tts_asking', startRecognitionWithCue);
         };
     </script>
 </body>
