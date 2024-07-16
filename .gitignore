@@ -1,2 +1,3 @@
 model/mms-tts-ind/model.safetensors
+output/
 vqris/

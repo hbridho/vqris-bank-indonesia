@@ -61,12 +61,20 @@
             font-size: 24px;
             font-weight: bold;
         }
+        #speech-text {
+            position: absolute;
+            top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
     <div id="content">
+        <div id="speech-text"></div>
         <img id="generated-img" src="{{ url_for('static', filename='images/a.png') }}" alt="QR Code">
         <p id="text"></p>
         <div class="button-container">
@@ -91,6 +99,14 @@
             };
         }
 
+        function updateSpeechText(text) {
+            document.getElementById('speech-text').innerText = text;
+        }
+
+        function clearSpeechText() {
+            document.getElementById('speech-text').innerText = '';
+        }
+
         function startRecognitionWithCue() {
             playAudio('/static/voice/start_rec.wav', function() {
                 startRecognition();
@@ -113,7 +129,35 @@
             }
         }
 
+        function handleFailedRecognition() {
+            updateSpeechText('Input gagal. Coba lagi.');
+            playAudio('/tts_failed', function() {
+                if (currentStep === 0) {
+                    updateSpeechText('Apakah ingin melakukan pembayaran via V-QRIS?');
+                    playAudio('/tts_suggest', startRecognitionWithCue);
+                } else if (currentStep === 1) {
+                    updateSpeechText('Silahkan menyebutkan nominal pembayaran');
+                    playAudio('/tts_asking', startRecognitionWithCue);
+                } else if (currentStep === 2) {
+                    updateSpeechText('Silahkan menyebutkan nominal pembayaran');
+                    playAudio('/tts_asking', startRecognitionWithCue);
+                }
+            });
+        }
+
+        function isPositiveResponse(text) {
+            const positiveResponses = ["iya", "ya", "yes", "yup", "benar", "betul", "ok", "oke", "baik"];
+            return positiveResponses.some(word => text.includes(word));
+        }
+
+        function isNegativeResponse(text) {
+            const negativeResponses = ["tidak", "ga", "gak", "enggak", "no", "nggak", "bukan"];
+            return negativeResponses.some(word => text.includes(word));
+        }
+
         document.getElementById('start-btn').addEventListener('click', () => {
+            toggleButtonState(true);  // Disable the button immediately
+            updateSpeechText('Apakah ingin melakukan pembayaran via V-QRIS?');
             playAudio('/tts_suggest', startRecognitionWithCue);
         });
 
@@ -126,14 +170,14 @@
             var text = event.results[last][0].transcript.toLowerCase();
 
             var button = document.getElementById('start-btn');
-            button.disabled = true;
 
             if (currentStep === 0) {
-                if (text.includes("iya") || text.includes("yes")) {
+                if (isPositiveResponse(text)) {
                     currentStep++;
+                    updateSpeechText('Silahkan menyebutkan nominal pembayaran');
                     playAudio('/tts_asking', startRecognitionWithCue);
                 } else {
-                    location.reload();
+                    handleFailedRecognition();
                 }
             } else if (currentStep === 1) {
                 paymentAmount = text;
@@ -145,18 +189,20 @@
                     success: function(response) {
                         if (response.shown_number) {
                             currentStep++;
+                            clearSpeechText();
                             playAudio('/audio/' + response.audio, startRecognitionWithCue);
                             document.getElementById('text').textContent = "Rp. " + response.shown_number;
                         } else {
-                            playAudio('/tts_asking', startRecognitionWithCue);
+                            handleFailedRecognition();
                         }
                     },
                     error: function(error) {
-                        playAudio('/tts_asking', startRecognitionWithCue);
+                        handleFailedRecognition();
                     }
                 });
             } else if (currentStep === 2) {
-                if (text.includes("iya") || text.includes("yes")) {
+                if (isPositiveResponse(text)) {
+                    updateSpeechText('Kode QR berhasil dibuat, Mohon tunjukan kepada kasir');
                     playAudio('/tts_confirmation', function() {
                         document.getElementById('generated-img').style.display = 'block';
                         document.getElementById('text').style.display = 'none';
@@ -164,9 +210,11 @@
                         document.getElementById('back-btn').style.display = 'block';
                         currentStep = 0;  // Reset for next interaction
                     });
-                } else {
-                    currentStep = 1;  // Go back to asking amount
+                } else if (isNegativeResponse(text)) {
+                    updateSpeechText('Silahkan menyebutkan nominal pembayaran');
                     playAudio('/tts_asking', startRecognitionWithCue);
+                } else {
+                    handleFailedRecognition();
                 }
             }
         };
@@ -177,9 +225,7 @@
         };
 
         recognition.onerror = function(event) {
-            var button = document.getElementById('start-btn');
-            button.disabled = false;
-            playAudio('/tts_asking', startRecognitionWithCue);
+            handleFailedRecognition();
         };
     </script>
 </body>

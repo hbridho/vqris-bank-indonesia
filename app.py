@@ -53,64 +53,33 @@ def clear_output_folder(output_dir):
         if os.path.isfile(file_path):
             os.unlink(file_path)
 
-def tts_suggest():
+def generate_audio(input_text, output_filename):
     output_dir = "output"
     os.makedirs(output_dir, exist_ok=True)
-    clear_output_folder(output_dir)
-
-    input_text = "Apakah ingin melakukan pembayaran via fikris?"
     inputs = tokenizer(input_text, return_tensors="pt")
     with torch.no_grad():
         output = model(**inputs).waveform.squeeze().cpu().numpy()
-    
-    output_path = os.path.join(output_dir, "suggesting.wav")
+    output_path = os.path.join(output_dir, output_filename)
     scipy.io.wavfile.write(output_path, rate=model.config.sampling_rate, data=output)
-    return "suggesting.wav"
+    return output_filename
+
+def tts_suggest():
+    return generate_audio("Apakah ingin melakukan pembayaran via fikris?", "suggesting.wav")
 
 def tts_asking():
-    output_dir = "output"
-    os.makedirs(output_dir, exist_ok=True)
-    clear_output_folder(output_dir)
+    return generate_audio("Silahkan menyebutkan nominal pembayaran", "asking.wav")
 
-    input_text = "Silahkan menyebutkan nominal pembayaran"
-    inputs = tokenizer(input_text, return_tensors="pt")
-    with torch.no_grad():
-        output = model(**inputs).waveform.squeeze().cpu().numpy()
-    
-    output_path = os.path.join(output_dir, "asking.wav")
-    scipy.io.wavfile.write(output_path, rate=model.config.sampling_rate, data=output)
-    return "asking.wav"
+def tts_failed():
+    return generate_audio("Input gagal. Coba lagi.", "failed.wav")
 
 def tts_acknowledge(input_text):
-    output_dir = "output"
-    os.makedirs(output_dir, exist_ok=True)
-    clear_output_folder(output_dir)
-
     shown_number = strip_number(input_text)
     text_for_conversion = shown_number.replace(".", "").replace(",", "")
     input_text = num_to_text(text_for_conversion)
-    input_text = f"Anda akan membuat pembayaran senilai {input_text} rupiah, Apakah benar?"
-    inputs = tokenizer(input_text, return_tensors="pt")
-    with torch.no_grad():
-        output = model(**inputs).waveform.squeeze().cpu().numpy()
-    
-    output_path = os.path.join(output_dir, "acknowledge.wav")
-    scipy.io.wavfile.write(output_path, rate=model.config.sampling_rate, data=output)
-    return shown_number, "acknowledge.wav"
+    return shown_number, generate_audio(f"Anda akan membuat pembayaran senilai {input_text} rupiah, Apakah benar?", "acknowledge.wav")
 
 def tts_confirmation():
-    output_dir = "output"
-    os.makedirs(output_dir, exist_ok=True)
-    clear_output_folder(output_dir)
-
-    input_text = "Kode kyuar berhasil dibuat, Mohon tunjukan kepada kasir"
-    inputs = tokenizer(input_text, return_tensors="pt")
-    with torch.no_grad():
-        output = model(**inputs).waveform.squeeze().cpu().numpy()
-    
-    output_path = os.path.join(output_dir, "confirmation.wav")
-    scipy.io.wavfile.write(output_path, rate=model.config.sampling_rate, data=output)
-    return "confirmation.wav"
+    return generate_audio("Kode kyuar berhasil dibuat, Mohon tunjukan kepada kasir", "confirmation.wav")
 
 @app.route("/")
 def home():
@@ -136,6 +105,11 @@ def get_tts_suggest():
 @app.route('/tts_asking', methods=['GET'])
 def get_tts_asking():
     audio_file = tts_asking()
+    return send_from_directory('output', audio_file)
+
+@app.route('/tts_failed', methods=['GET'])
+def get_tts_failed():
+    audio_file = tts_failed()
     return send_from_directory('output', audio_file)
 
 @app.route('/tts_confirmation', methods=['GET'])
