@@ -55,9 +55,10 @@
             width: auto;
             height: 200px;
             margin-bottom: 20px;
+            margin-top: 100px; /* Added margin-top to lower the image */
         }
         #text {
-            margin-top: 20px;
+            margin-top: 100px; /* Added margin-top to lower the generated text */
             font-size: 24px;
             font-weight: bold;
         }
@@ -68,6 +69,17 @@
             font-weight: bold;
             padding: 10px;
         }
+        #back-btn {
+            width: 50px; /* Smaller width */
+            height: 50px; /* Smaller height */
+            background-color: transparent;
+            background-size: cover;
+            border: none;
+            cursor: pointer;
+            position: absolute;
+            bottom: 20px; /* Positioning at the bottom left */
+            left: 20px; /* Positioning at the bottom left */
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -75,12 +87,13 @@
 <body>
     <div id="content">
         <div id="speech-text"></div>
-        <img id="generated-img" src="{{ url_for('static', filename='images/a.png') }}" alt="QR Code">
+        <img id="generated-img" src="{{ url_for('static', filename='images/qr.png') }}" alt="QR Code">
         <p id="text"></p>
         <div class="button-container">
             <button id="start-btn" class="button" style="background-image: url('{{ url_for('static', filename='images/mic.png') }}');"></button>
-            <button id="back-btn" class="button" style="display: none; background-image: url('{{ url_for('static', filename='images/back.png') }}');"></button>
+            <img id="sound-wave" src="{{ url_for('static', filename='images/sound_wave.gif') }}" style="width: 300px; height: 300px; display: none;">
         </div>
+        <button id="back-btn" class="button" style="background-image: url('{{ url_for('static', filename='images/back.png') }}');"></button>
     </div>
     <script>
         var recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -110,7 +123,6 @@
         function startRecognitionWithCue() {
             playAudio('/static/voice/start_rec.wav', function() {
                 startRecognition();
-                toggleButtonState(true);
             });
         }
 
@@ -118,14 +130,15 @@
             recognition.start();
         }
 
-        function toggleButtonState(isRecognizing) {
+        function showSoundWave(isRecognizing) {
             var button = document.getElementById('start-btn');
+            var soundWave = document.getElementById('sound-wave');
             if (isRecognizing) {
-                button.disabled = true;
-                button.style.backgroundImage = "url('{{ url_for('static', filename='images/sound_wave.gif') }}')";
+                button.style.display = 'none'; // Hide the button
+                soundWave.style.display = 'block'; // Show the sound wave
             } else {
-                button.disabled = false;
-                button.style.backgroundImage = "url('{{ url_for('static', filename='images/mic.png') }}')";
+                button.style.display = 'none'; // Keep the button hidden
+                soundWave.style.display = 'block'; // Keep the sound wave visible
             }
         }
 
@@ -135,10 +148,7 @@
                 if (currentStep === 0) {
                     updateSpeechText('Apakah ingin melakukan pembayaran via V-QRIS?');
                     playAudio('/tts_suggest', startRecognitionWithCue);
-                } else if (currentStep === 1) {
-                    updateSpeechText('Silahkan menyebutkan nominal pembayaran');
-                    playAudio('/tts_asking', startRecognitionWithCue);
-                } else if (currentStep === 2) {
+                } else if (currentStep === 1 || currentStep === 2) {
                     updateSpeechText('Silahkan menyebutkan nominal pembayaran');
                     playAudio('/tts_asking', startRecognitionWithCue);
                 }
@@ -156,7 +166,7 @@
         }
 
         document.getElementById('start-btn').addEventListener('click', () => {
-            toggleButtonState(true);  // Disable the button immediately
+            showSoundWave(true);  // Show the sound wave and hide the button immediately
             updateSpeechText('Apakah ingin melakukan pembayaran via V-QRIS?');
             playAudio('/tts_suggest', startRecognitionWithCue);
         });
@@ -168,8 +178,6 @@
         recognition.onresult = function(event) {
             var last = event.results.length - 1;
             var text = event.results[last][0].transcript.toLowerCase();
-
-            var button = document.getElementById('start-btn');
 
             if (currentStep === 0) {
                 if (isPositiveResponse(text)) {
@@ -206,8 +214,7 @@
                     playAudio('/tts_confirmation', function() {
                         document.getElementById('generated-img').style.display = 'block';
                         document.getElementById('text').style.display = 'none';
-                        button.style.display = 'none';
-                        document.getElementById('back-btn').style.display = 'block';
+                        document.getElementById('sound-wave').style.display = 'none'; // Hide the sound wave
                         currentStep = 0;  // Reset for next interaction
                     });
                 } else if (isNegativeResponse(text)) {
@@ -221,7 +228,6 @@
 
         recognition.onspeechend = function() {
             recognition.stop();
-            toggleButtonState(false);
         };
 
         recognition.onerror = function(event) {
