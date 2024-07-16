@@ -47,12 +47,6 @@ def strip_number(text):
             return f"{int(stripped_text.replace('.', '')):,}".replace(',', '.')
     return stripped_text
 
-def clear_output_folder(output_dir):
-    for filename in os.listdir(output_dir):
-        file_path = os.path.join(output_dir, filename)
-        if os.path.isfile(file_path):
-            os.unlink(file_path)
-
 def generate_audio(input_text, output_filename):
     output_dir = "output"
     os.makedirs(output_dir, exist_ok=True)
@@ -63,23 +57,11 @@ def generate_audio(input_text, output_filename):
     scipy.io.wavfile.write(output_path, rate=model.config.sampling_rate, data=output)
     return output_filename
 
-def tts_suggest():
-    return generate_audio("Apakah ingin melakukan pembayaran via fikris?", "suggesting.wav")
-
-def tts_asking():
-    return generate_audio("Silahkan menyebutkan nominal pembayaran", "asking.wav")
-
-def tts_failed():
-    return generate_audio("Input gagal. Coba lagi.", "failed.wav")
-
 def tts_acknowledge(input_text):
     shown_number = strip_number(input_text)
     text_for_conversion = shown_number.replace(".", "").replace(",", "")
     input_text = num_to_text(text_for_conversion)
     return shown_number, generate_audio(f"Anda akan membuat pembayaran senilai {input_text} rupiah, Apakah benar?", "acknowledge.wav")
-
-def tts_confirmation():
-    return generate_audio("Kode kyuar berhasil dibuat, Mohon tunjukan kepada kasir", "confirmation.wav")
 
 @app.route("/")
 def home():
@@ -99,23 +81,19 @@ def speech_to_text():
 
 @app.route('/tts_suggest', methods=['GET'])
 def get_tts_suggest():
-    audio_file = tts_suggest()
-    return send_from_directory('output', audio_file)
+    return send_from_directory('static/voice', 'suggesting.wav')
 
 @app.route('/tts_asking', methods=['GET'])
 def get_tts_asking():
-    audio_file = tts_asking()
-    return send_from_directory('output', audio_file)
+    return send_from_directory('static/voice', 'asking.wav')
 
 @app.route('/tts_failed', methods=['GET'])
 def get_tts_failed():
-    audio_file = tts_failed()
-    return send_from_directory('output', audio_file)
+    return send_from_directory('static/voice', 'failed.wav')
 
 @app.route('/tts_confirmation', methods=['GET'])
 def get_tts_confirmation():
-    audio_file = tts_confirmation()
-    return send_from_directory('output', audio_file)
+    return send_from_directory('static/voice', 'confirmation.wav')
 
 @app.route('/audio/<filename>')
 def get_audio(filename):
