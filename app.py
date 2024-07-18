@@ -4,12 +4,24 @@ import torch
 import scipy.io.wavfile
 import os
 import re
+import logging
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
+logging.basicConfig(level=logging.DEBUG)
+
 model_path = "model/mms-tts-ind"
-model = VitsModel.from_pretrained(model_path)
-tokenizer = AutoTokenizer.from_pretrained(model_path)
+try:
+    model = VitsModel.from_pretrained(model_path)
+    app.logger.info("Model loaded successfully.")
+except Exception as e:
+    app.logger.error(f"Error loading model: {e}")
+
+try:
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    app.logger.info("Tokenizer loaded successfully.")
+except Exception as e:
+    app.logger.error(f"Error loading tokenizer: {e}")
 
 def num_to_text(num):
     satuan = ["", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sebelas"]
