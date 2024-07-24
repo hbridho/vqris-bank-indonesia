@@ -83,7 +83,7 @@ def home():
 def speech_to_text():
     data = request.get_json()
     text = data['text']
-    
+
     if text.lower() in ["iya", "yes"]:
         return jsonify({"response": "proceed"})
     
@@ -93,27 +93,41 @@ def speech_to_text():
 
 @app.route('/tts_suggest', methods=['GET'])
 def get_tts_suggest():
-    return send_from_directory('static/voice', 'suggesting.wav')
+    return send_from_directory('static/voices', 'suggesting.wav')
+
+@app.route('/tts_input_pin', methods=['GET'])
+def get_tts_input_pin():
+    return send_from_directory('static/voices', 'input_pin.wav')
 
 @app.route('/tts_asking', methods=['GET'])
 def get_tts_asking():
-    return send_from_directory('static/voice', 'asking.wav')
+    return send_from_directory('static/voices', 'asking.wav')
 
 @app.route('/tts_failed', methods=['GET'])
 def get_tts_failed():
-    return send_from_directory('static/voice', 'failed.wav')
+    return send_from_directory('static/voices', 'failed.wav')
 
 @app.route('/tts_confirmation', methods=['GET'])
 def get_tts_confirmation():
-    return send_from_directory('static/voice', 'confirmation.wav')
+    return send_from_directory('static/voices', 'confirmation.wav')
 
 @app.route('/audio/<filename>')
 def get_audio(filename):
     return send_from_directory('output', filename)
 
-@app.route('/static/voice/start_rec.wav')
+@app.route('/static/voices/start_rec.wav')
 def get_cue_sound():
-    return send_from_directory('static/voice', 'start_rec.wav')
+    return send_from_directory('static/voices', 'start_rec.wav')
+
+@app.route('/validate_pin', methods=['POST'])
+def validate_pin():
+    data = request.get_json()
+    pin = data.get('pin', '')
+    correct_pin = '1298'
+    if pin == correct_pin:
+        return jsonify({'status': 'success'})
+    else:
+        return jsonify({'status': 'failure'})
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8080))
