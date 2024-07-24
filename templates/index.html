@@ -23,10 +23,10 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             padding: 20px;
-            height: 90%;
-            width: 90%;
-            max-height: 600px;
-            max-width: 400px;
+            height: 100%;
+            width: 100%;
+            max-height: 400px;
+            max-width: 300px;
             text-align: center;
             justify-content: space-between;
             position: relative;
@@ -55,7 +55,7 @@
             width: auto;
             height: 200px;
             margin-bottom: 20px;
-            margin-top: 100px; /* Added margin-top to lower the image */
+            margin-top: 150px; /* Added margin-top to lower the image */
         }
         #text {
             margin-top: 100px; /* Added margin-top to lower the generated text */
@@ -64,22 +64,23 @@
         }
         #speech-text {
             position: absolute;
-            top: 10px;
+            top: 20px;
             font-size: 18px;
             font-weight: bold;
             padding: 10px;
         }
         #pin-auth {
-            display: flex;
+            display: none; /* Hide initially */
             flex-direction: column;
             align-items: center;
             background-color: #fff;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             padding: 20px;
-            width: 50%;  /* Adjusted width to fit screen */
-            height: 50%;  /* Adjusted height to fit screen */
-            max-width: 300px; /* Adjusted maximum width */
+            height: 100%;
+            width: 100%;
+            max-height: 400px;
+            max-width: 300px;
             text-align: center;
             justify-content: center; /* Center content vertically */
         }
@@ -105,11 +106,24 @@
         .numpad button.zero {
             grid-column: 2;
         }
+        #start-btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 500px; /* Increase width */
+            height: 500px; /* Increase height */
+            background-image: url('{{ url_for('static', filename='images/mic.png') }}');
+            background-size: cover;
+            border: none;
+            border-radius: 50%; /* Make circular */
+            cursor: pointer;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
+    <button id="start-btn"></button>
     <div id="pin-auth">
         <div id="pin-display">----</div>
         <div class="numpad">
@@ -130,13 +144,15 @@
         <img id="generated-img" src="{{ url_for('static', filename='images/qr.png') }}" alt="QR Code">
         <p id="text"></p>
         <div class="button-container">
-            <img id="sound-wave" src="{{ url_for('static', filename='images/sound_wave.gif') }}" style="width: 300px; height: 300px; display: none;">
+            <img id="sound-wave" src="{{ url_for('static', filename='images/sound_wave.gif') }}" style="width: 300px; height: 300px; display: none; margin-top: 100px;">
         </div>
     </div>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById('start-btn').addEventListener('click', function() {
             var audio = new Audio('/tts_input_pin');
             audio.play();
+            document.getElementById('start-btn').style.display = 'none'; // Hide the start button after click
+            document.getElementById('pin-auth').style.display = 'flex'; // Show the PIN input
         });
 
         var correctPin = '1234';
@@ -251,6 +267,7 @@
                             if (response.shown_number) {
                                 currentStep++;
                                 clearSpeechText();
+                                updateSpeechText("Rp. " + response.shown_number);
                                 playAudio('/audio/' + response.audio, startRecognitionWithCue);
                                 document.getElementById('text').textContent = "Rp. " + response.shown_number;
                             } else {
