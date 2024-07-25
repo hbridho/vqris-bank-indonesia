@@ -83,7 +83,7 @@ def home():
 def speech_to_text():
     data = request.get_json()
     text = data['text']
-
+    
     if text.lower() in ["iya", "yes"]:
         return jsonify({"response": "proceed"})
     
@@ -123,7 +123,7 @@ def get_cue_sound():
 def validate_pin():
     data = request.get_json()
     pin = data.get('pin', '')
-    correct_pin = '1298'
+    correct_pin = '1234'
     if pin == correct_pin:
         return jsonify({'status': 'success'})
     else:
