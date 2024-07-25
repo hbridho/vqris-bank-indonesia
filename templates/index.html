@@ -195,10 +195,13 @@
             const y = window.innerHeight / 2;
             createRipple(x, y);
             if (tapCount === 3) {
-                document.getElementById('pin-auth').style.display = 'none';
-                document.getElementById('content').style.display = 'flex';
-                showSoundWave(true);
-                startProcess();
+                var audio = new Audio('/tts_input_pin_success');
+                audio.play();
+                audio.onended = function() {
+                    document.getElementById('pin-auth').style.display = 'none';
+                    document.getElementById('content').style.display = 'flex';
+                    showSoundWave(true);
+                    startProcess();}
             }
         }
 

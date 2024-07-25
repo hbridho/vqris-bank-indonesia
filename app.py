@@ -99,6 +99,14 @@ def get_tts_suggest():
 def get_tts_input_pin():
     return send_from_directory('static/voices', 'input_pin.wav')
 
+@app.route('/tts_input_pin_success', methods=['GET'])
+def get_tts_input_pin_success():
+    return send_from_directory('static/voices', 'input_pin_success.wav')
+
+@app.route('/tts_input_pin_failed', methods=['GET'])
+def get_tts_input_pin_failed():
+    return send_from_directory('static/voices', 'input_pin_failed.wav')
+
 @app.route('/tts_asking', methods=['GET'])
 def get_tts_asking():
     return send_from_directory('static/voices', 'asking.wav')
