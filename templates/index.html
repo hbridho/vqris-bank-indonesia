@@ -14,6 +14,9 @@
             margin: 0;
             background-color: #E5F4F9;
             color: #333;
+            font-size: 62.5%;
+            background-color: #000;
+            overflow: hidden;
         }
         #content {
             display: none; /* Initially hidden */
@@ -118,26 +121,44 @@
             border-radius: 50%; /* Make circular */
             cursor: pointer;
         }
+        .ripple {
+            position: absolute;
+            background-color: #E0F7FA;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+            display: grid;
+            animation: ripple 3s linear infinite;
+            transform: translate(-50%, -50%);
+        }
+        .ripple::before,
+        .ripple::after {
+            content: "";
+            grid-area: 1/1;
+            border-radius: 50%;
+            animation: inherit;
+            animation-delay: 1s;
+        }
+        .ripple::after {
+            animation-delay: 2s;
+        }
+        @keyframes ripple {
+            0% {
+                box-shadow: 0 0 0 1rem rgba(224, 247, 250, 0.4);
+            }
+            100% {
+                box-shadow: 0 0 0 12rem rgba(224, 247, 250, 0);
+            }
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
+    <div id="ripple-container"></div>
     <button id="start-btn"></button>
     <div id="pin-auth">
-        <div id="pin-display">----</div>
-        <div class="numpad">
-            <button class="pin-button" data-value="1" style="background-image: url('{{ url_for('static', filename='images/Dtmf-1.png') }}');"></button>
-            <button class="pin-button" data-value="2" style="background-image: url('{{ url_for('static', filename='images/Dtmf-2.png') }}');"></button>
-            <button class="pin-button" data-value="3" style="background-image: url('{{ url_for('static', filename='images/Dtmf-3.png') }}');"></button>
-            <button class="pin-button" data-value="4" style="background-image: url('{{ url_for('static', filename='images/Dtmf-4.png') }}');"></button>
-            <button class="pin-button" data-value="5" style="background-image: url('{{ url_for('static', filename='images/Dtmf-5.png') }}');"></button>
-            <button class="pin-button" data-value="6" style="background-image: url('{{ url_for('static', filename='images/Dtmf-6.png') }}');"></button>
-            <button class="pin-button" data-value="7" style="background-image: url('{{ url_for('static', filename='images/Dtmf-7.png') }}');"></button>
-            <button class="pin-button" data-value="8" style="background-image: url('{{ url_for('static', filename='images/Dtmf-8.png') }}');"></button>
-            <button class="pin-button" data-value="9" style="background-image: url('{{ url_for('static', filename='images/Dtmf-9.png') }}');"></button>
-            <button class="pin-button zero" data-value="0" style="background-image: url('{{ url_for('static', filename='images/Dtmf-0.png') }}');"></button>
-        </div>
+        <div id="pin-display">Tap the screen three times to proceed</div>
     </div>
     <div id="content">
         <div id="speech-text"></div>
@@ -155,61 +176,38 @@
             document.getElementById('pin-auth').style.display = 'flex'; // Show the PIN input
         });
 
-        var correctPin = '1234';
-        var enteredPin = '';
+        var tapCount = 0;
 
-        function updatePinDisplay() {
-            var display = enteredPin.padEnd(4, '-');
-            document.getElementById('pin-display').innerText = display;
+        function createRipple(x, y) {
+            const ripple = document.createElement('div');
+            ripple.classList.add('ripple');
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            document.getElementById('ripple-container').appendChild(ripple);
+            setTimeout(() => {
+                ripple.remove();
+            }, 3000);
         }
 
-        function playTone(digit) {
-            var audio = new Audio('/static/tones/Dtmf-' + digit + '.wav');
-            audio.play();
+        function handleTap(event) {
+            tapCount++;
+            const x = window.innerWidth / 2;
+            const y = window.innerHeight / 2;
+            createRipple(x, y);
+            if (tapCount === 3) {
+                document.getElementById('pin-auth').style.display = 'none';
+                document.getElementById('content').style.display = 'flex';
+                showSoundWave(true);
+                startProcess();
+            }
         }
 
-        function validatePin() {
-            $.ajax({
-                url: '/validate_pin',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ 'pin': enteredPin }),
-                success: function(response) {
-                    if (response.status === 'success') {
-                        document.getElementById('pin-auth').style.display = 'none';
-                        document.getElementById('content').style.display = 'flex';
-                        showSoundWave(true);
-                        startProcess();
-                    } else {
-                        alert('Incorrect PIN. Please try again.');
-                        enteredPin = '';
-                        updatePinDisplay();
-                    }
-                },
-                error: function() {
-                    alert('Error validating PIN.');
-                    enteredPin = '';
-                    updatePinDisplay();
-                }
-            });
-        }
+        document.getElementById('pin-auth').addEventListener('click', handleTap);
 
         function startProcess() {
             updateSpeechText('Apakah ingin melakukan pembayaran via V-QRIS?');
             playAudio('/tts_suggest', startRecognitionWithCue);
         }
-
-        document.querySelectorAll('.pin-button').forEach(function(button) {
-            button.addEventListener('click', function() {
-                var digit = this.getAttribute('data-value');
-                playTone(digit);
-                enteredPin += digit;
-                updatePinDisplay();
-                if (enteredPin.length === 4) {
-                    validatePin();
-                }
-            });
-        });
 
         function playAudio(url, callback) {
             var audio = new Audio(url);
