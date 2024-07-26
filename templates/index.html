@@ -12,19 +12,18 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #E5F4F9;
+            background: url('{{ url_for('static', filename='images/Launcher.svg') }}') no-repeat center center;
+            background-size: contain;
             color: #333;
             font-size: 62.5%;
-            background-color: #000;
             overflow: hidden;
         }
         #content {
-            display: none; /* Initially hidden */
+            display: none;
             flex-direction: column;
             align-items: center;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: transparent;
+            border-radius: 0px;
             padding: 20px;
             height: 100%;
             width: 100%;
@@ -36,32 +35,33 @@
         }
         .button-container {
             position: absolute;
-            top: 50%; /* Center vertically */
+            background-color: transparent;
+            top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%); /* Center horizontally and vertically */
+            transform: translate(-50%, -50%);
             display: flex;
             flex-direction: column;
             align-items: center;
         }
         .button {
             display: inline-block;
-            width: 300px; /* Increase width */
-            height: 300px; /* Increase height */
+            width: 300px;
+            height: 300px;
             background-color: transparent;
             background-size: cover;
             border: none;
             cursor: pointer;
-            margin-top: 10px; /* Adjust margin to control spacing between buttons */
+            margin-top: 10px;
         }
         #generated-img {
             display: none;
             width: auto;
             height: 200px;
             margin-bottom: 20px;
-            margin-top: 150px; /* Added margin-top to lower the image */
+            margin-top: 150px;
         }
         #text {
-            margin-top: 100px; /* Added margin-top to lower the generated text */
+            margin-top: 50px;
             font-size: 24px;
             font-weight: bold;
         }
@@ -73,52 +73,35 @@
             padding: 10px;
         }
         #pin-auth {
-            display: none; /* Hide initially */
+            display: none;
             flex-direction: column;
             align-items: center;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: transparent;
+            border-radius: 0px;
             padding: 20px;
             height: 100%;
             width: 100%;
             max-height: 400px;
             max-width: 300px;
             text-align: center;
-            justify-content: center; /* Center content vertically */
+            justify-content: center;
         }
         #pin-display {
-            font-size: 24px;
+            top: 20px;
+            font-size: 18px;
             font-weight: bold;
-            margin-bottom: 20px; /* Increased margin-bottom for better spacing */
-        }
-        .numpad {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            width: 260px; /* Adjusted width to fit numpad buttons */
-        }
-        .numpad button {
-            width: 80px; /* Adjusted width */
-            height: 80px; /* Adjusted height */
-            background-color: transparent;
-            background-size: cover;
-            border: none;
-            cursor: pointer;
-        }
-        .numpad button.zero {
-            grid-column: 2;
+            padding: 10px;
         }
         #start-btn {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 500px; /* Increase width */
-            height: 500px; /* Increase height */
-            background-image: url('{{ url_for('static', filename='images/mic.png') }}');
+            width: 200px; /* Smaller size */
+            height: 200px; /* Smaller size */
+            background-image: url('{{ url_for('static', filename='images/mic.svg') }}');
             background-size: cover;
-            border: none;
-            border-radius: 50%; /* Make circular */
+            background-color: transparent; /* Ensure no background color */
+            border: none; /* Remove any border */
+            border-radius: 50%; /* Make it circular if needed */
+            outline: none; /* Remove any outline */
+            box-shadow: none; /* Remove any box shadow */
             cursor: pointer;
         }
         .ripple {
@@ -144,10 +127,10 @@
         }
         @keyframes ripple {
             0% {
-                box-shadow: 0 0 0 1rem rgba(224, 247, 250, 0.4);
+                box-shadow: 0 0 0 1rem rgba(0, 0, 0, 0.386);
             }
             100% {
-                box-shadow: 0 0 0 12rem rgba(224, 247, 250, 0);
+                box-shadow: 0 0 0 12rem rgba(0, 0, 0, 0);
             }
         }
     </style>
@@ -158,7 +141,7 @@
     <div id="ripple-container"></div>
     <button id="start-btn"></button>
     <div id="pin-auth">
-        <div id="pin-display">Tap the screen three times to proceed</div>
+        <div id="pin-display">Silahkan memasukan kode PIN</div>
     </div>
     <div id="content">
         <div id="speech-text"></div>
@@ -170,10 +153,10 @@
     </div>
     <script>
         document.getElementById('start-btn').addEventListener('click', function() {
-            var audio = new Audio('/tts_input_pin');
-            audio.play();
-            document.getElementById('start-btn').style.display = 'none'; // Hide the start button after click
-            document.getElementById('pin-auth').style.display = 'flex'; // Show the PIN input
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('content').style.display = 'flex';
+            showSoundWave(true);
+            startProcess();
         });
 
         var tapCount = 0;
@@ -186,7 +169,7 @@
             document.getElementById('ripple-container').appendChild(ripple);
             setTimeout(() => {
                 ripple.remove();
-            }, 3000);
+            }, 1000);
         }
 
         function handleTap(event) {
@@ -201,11 +184,10 @@
                     document.getElementById('pin-auth').style.display = 'none';
                     document.getElementById('content').style.display = 'flex';
                     showSoundWave(true);
-                    startProcess();}
+                    generateQRCode();
+                };
             }
         }
-
-        document.getElementById('pin-auth').addEventListener('click', handleTap);
 
         function startProcess() {
             updateSpeechText('Apakah ingin melakukan pembayaran via V-QRIS?');
@@ -268,9 +250,8 @@
                             if (response.shown_number) {
                                 currentStep++;
                                 clearSpeechText();
-                                updateSpeechText("Rp. " + response.shown_number);
                                 playAudio('/audio/' + response.audio, startRecognitionWithCue);
-                                document.getElementById('text').textContent = "Rp. " + response.shown_number;
+                                document.getElementById('text').textContent = "Rp " + response.shown_number;
                             } else {
                                 handleFailedRecognition();
                             }
@@ -281,13 +262,14 @@
                     });
                 } else if (currentStep === 2) {
                     if (isPositiveResponse(text)) {
-                        updateSpeechText('Kode QR berhasil dibuat, Mohon tunjukan kepada kasir');
-                        playAudio('/tts_confirmation', function() {
-                            document.getElementById('generated-img').style.display = 'block';
-                            document.getElementById('text').style.display = 'none';
-                            showSoundWave(false);
-                            currentStep = 0;
-                        });
+                        document.getElementById('content').style.display = 'none';
+                        document.getElementById('pin-auth').style.display = 'flex';
+                        updateSpeechText('Silahkan masukan Kode pin.');
+                        document.getElementById('speech-text').style.display = 'flex'
+                        tapCount = 0;
+                        var audio = new Audio('/tts_input_pin');
+                        audio.play();
+                        document.getElementById('pin-auth').addEventListener('click', handleTap);
                     } else if (isNegativeResponse(text)) {
                         updateSpeechText('Silahkan menyebutkan nominal pembayaran');
                         playAudio('/tts_asking', startRecognitionWithCue);
@@ -310,13 +292,9 @@
         function handleFailedRecognition() {
             updateSpeechText('Input gagal. Coba lagi.');
             playAudio('/tts_failed', function() {
-                if (currentStep === 0) {
-                    updateSpeechText('Apakah ingin melakukan pembayaran via V-QRIS?');
-                    playAudio('/tts_suggest', startRecognitionWithCue);
-                } else if (currentStep === 1 || currentStep === 2) {
-                    updateSpeechText('Silahkan menyebutkan nominal pembayaran');
-                    playAudio('/tts_asking', startRecognitionWithCue);
-                }
+                document.getElementById('content').style.display = 'none';
+                document.getElementById('start-btn').style.display = 'block';
+                currentStep = 0;
             });
         }
 
@@ -337,6 +315,15 @@
         function isNegativeResponse(text) {
             const negativeResponses = ["tidak", "ga", "gak", "enggak", "no", "nggak", "bukan"];
             return negativeResponses.some(word => text.includes(word));
+        }
+
+        function generateQRCode() {
+            updateSpeechText('Kode QR berhasil dibuat, Mohon tunjukan kepada kasir');
+            playAudio('/tts_confirmation', function() {
+                document.getElementById('generated-img').style.display = 'block';
+                showSoundWave(false);
+                currentStep = 0;
+            });
         }
 
         var currentStep = 0;
