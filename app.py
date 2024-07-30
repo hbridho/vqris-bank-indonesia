@@ -5,8 +5,10 @@ import scipy.io.wavfile
 import os
 import re
 import logging
+from flask_cors import CORS
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
+CORS(app) 
 
 logging.basicConfig(level=logging.DEBUG)
 
